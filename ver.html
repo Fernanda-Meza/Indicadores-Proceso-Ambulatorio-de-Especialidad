@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indicadores BSC Especialidades · SSVSA</title>
+<meta name="theme-color" content="#0b5d63">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --pri:#0b5d63; --pri2:#127a82; --pri-l:#e3f1f2; --ink:#1d2b2f; --mut:#5f6f73; --line:#d7e1e3;
+  --bg:#f4f7f8; --ok:#1e7b46; --ok-bg:#e4f4ea; --ko:#b3261e; --ko-bg:#fbe7e5; --na:#8a9599; --warn:#9a6700; --warn-bg:#fff4d6;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{background:var(--pri);color:#fff;padding:14px 22px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:18px;font-weight:600;letter-spacing:.2px}
+header .sub{font-size:12px;opacity:.85;margin-top:2px}
+.btn{border:1px solid var(--pri);background:#fff;color:var(--pri);border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--pri-l)}
+.btn.inv{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.btn.inv:hover{background:rgba(255,255,255,.12)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:12px 22px;background:#fff;border-bottom:1px solid var(--line)}
+.bar label{display:flex;flex-direction:column;font-size:11px;color:var(--mut);gap:3px;text-transform:uppercase;letter-spacing:.4px}
+select,input[type=number]{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+.tabs{display:flex;gap:2px;padding:0 22px;background:#fff;border-bottom:1px solid var(--line)}
+.tab{padding:10px 16px;cursor:pointer;color:var(--mut);border-bottom:3px solid transparent;font-weight:600}
+.tab.on{color:var(--pri);border-color:var(--pri)}
+main{padding:18px 22px 40px}
+.status{font-size:12px;color:var(--mut);padding:6px 22px;background:#fff;border-bottom:1px solid var(--line)}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px;color:var(--pri)}
+.card .note{font-size:12px;color:var(--mut);margin:0 0 10px}
+.tools{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px}
+.tw{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff}
+th,td{padding:6px 8px;border-bottom:1px solid #e8eef0;text-align:right;white-space:nowrap}
+th{background:#eef4f5;color:var(--ink);font-weight:600;position:sticky;top:0;z-index:2;text-align:center}
+thead tr:nth-child(2) th{top:29px}
+th.grp{background:var(--pri);color:#fff;border-left:2px solid #fff}
+td.l,th.l{text-align:left}
+td.sep,th.sep{border-left:2px solid var(--line)}
+tbody tr:hover td{background:#f7fbfb}
+td.ok{color:var(--ok);background:var(--ok-bg)}
+td.ko{color:var(--ko);background:var(--ko-bg);font-weight:600}
+td.na{color:var(--na)}
+td.warn{color:var(--warn);background:var(--warn-bg)}
+.pts{display:inline-block;min-width:22px;padding:1px 6px;border-radius:10px;font-weight:700;font-size:11.5px;margin-left:4px;text-align:center}
+.p4{background:#1e7b46;color:#fff}.p3{background:#5fa36b;color:#fff}.p2{background:#d9a400;color:#fff}.p1{background:#e07b39;color:#fff}.p0{background:#b3261e;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .t{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi .v{font-size:26px;font-weight:700;color:var(--pri);margin:4px 0}
+.kpi .d{font-size:12.5px;color:var(--ink);line-height:1.6}
+.empty{text-align:center;padding:60px 20px;color:var(--mut)}
+.empty .big{font-size:17px;color:var(--ink);margin-bottom:8px}
+a.lnk{color:var(--pri);cursor:pointer;text-decoration:underline}
+input.req{width:70px;text-align:right;padding:3px 5px}
+.met p,.met li{line-height:1.55}
+.met table{width:auto}
+.met td,.met th{text-align:left}
+.leg{font-size:12px;color:var(--mut);margin-top:8px}
+.badge{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-ko{background:var(--ko-bg);color:var(--ko)}.b-na{background:#eceff0;color:var(--na)}
+#drop.over{outline:3px dashed var(--pri2);outline-offset:-10px}
+.visor .admin{display:none!important}
+@media print{header .btn,.bar,.tabs,.tools{display:none}.tw{max-height:none}}
+</style>
+</head>
+<body id="drop">
+<header>
+  <div>
+    <h1>Indicadores BSC 2026 · Especialidades médicas</h1>
+    <div class="sub">Servicio de Salud Valparaíso – San Antonio · C.4_3.1 CNE · C.4_3.5 Altas · C.4_3.6 NSP · Fuente REM A07</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <input type="file" id="file" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden>
+    <button class="btn inv admin" onclick="document.getElementById('file').click()">Cargar REM A07</button>
+    <button class="btn inv admin" id="btnExpReq" title="Descarga los requisitos LE ingresados, para publicarlos en datos/requisito_le.csv">Exportar requisitos LE</button>
+    <button class="btn inv admin" id="btnClear" title="Quitar los datos cargados en esta sesión">Limpiar</button>
+  </div>
+</header>
+<div class="bar" id="bar">
+  <label>Año<select id="selAno"></select></label>
+  <label>Período<select id="selTipo">
+    <option value="acum">Acumulado al mes de corte</option>
+    <option value="mes">Mensual</option>
+    <option value="s1">1er semestre (ene–jun)</option>
+    <option value="s2">2do semestre (jul–dic)</option>
+    <option value="anual">Anual (ene–dic)</option>
+  </select></label>
+  <label id="lblMes">Mes / corte<select id="selMes"></select></label>
+  <label>Establecimiento<select id="selEst"></select></label>
+  <label>Indicador (vista especialidades)<select id="selMet">
+    <option value="pCNE">% Consulta nueva (CNE)</option>
+    <option value="pALT">% Altas</option>
+    <option value="pPE">% Pertinencia en box (SIC sec./terc.)</option>
+    <option value="pN">% NSP consulta nueva</option>
+    <option value="pC">% NSP control</option>
+    <option value="pT">% NSP total (informativo)</option>
+    <option value="pCR">% Contrarreferencia al alta</option>
+  </select></label>
+</div>
+<div class="tabs">
+  <div class="tab on" data-v="red">Red</div>
+  <div class="tab" data-v="est">Establecimiento</div>
+  <div class="tab" data-v="esp">Especialidades</div>
+  <div class="tab" data-v="met">Metodología</div>
+</div>
+<div class="status" id="status">Sin datos cargados.</div>
+<main id="main"></main>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ===== Parámetros BSC 2026 (fichas C.4_3.1, C.4_3.5, C.4_3.6) ===== */
+// [especialidad, código Sección A, código Sección A.1, meta CNE %, meta Altas %, grupo CNE, grupo Altas]
+const SPEC = [["PEDIATRÍA", "07020130", "09600342", 33, 14, 3, 4], ["MEDICINA INTERNA", "07020230", "09600343", 40, 14, 4, 4], ["NEONATOLOGÍA", "07020330", "09600344", 33, 18, 3, 5], ["ENFERMEDAD RESPIRATORIA PEDIÁTRICA (BRONCOPULMONAR INFANTIL)", "07020331", "09600345", 25, 7, 2, 2], ["ENFERMEDAD RESPIRATORIA DE ADULTO (BRONCOPULMONAR)", "07020332", "09600346", 33, 7, 3, 2], ["CARDIOLOGÍA", "07032100", "07032119", 40, 10, 4, 3], ["MASTOLOGÍA", "07032101", "07032120", 20, 5, 1, 1], ["ENDOCRINOLOGÍA PEDIÁTRICA", "07020501", "09600349", 25, 7, 2, 2], ["ENDOCRINOLOGÍA ADULTO", "07020600", "09600350", 25, 10, 2, 3], ["GASTROENTEROLOGÍA PEDIÁTRICA", "07020601", "09600351", 33, 10, 3, 3], ["GASTROENTEROLOGÍA ADULTO", "07020700", "09600352", 40, 10, 4, 3], ["GENÉTICA CLÍNICA", "07020800", "09600353", 45, 14, 5, 4], ["HEMATOLOGÍA", "07032102", "07032121", 20, 5, 1, 1], ["MEDICINA DEL ADOLESCENTE", "07032103", "07032122", 20, 10, 1, 3], ["NEFROLOGÍA PEDIÁTRICA", "07020901", "09600356", 25, 7, 2, 2], ["NEFROLOGÍA ADULTO", "07021000", "09600357", 25, 5, 2, 1], ["NUTRICIÓN CLÍNICA", "07032104", "07032123", 33, 10, 3, 3], ["MEDICINA MATERNO INFANTIL", "07032105", "07032124", 20, 14, 1, 4], ["REUMATOLOGÍA", "07032106", "07032125", 25, 7, 2, 2], ["MEDICINA PALIATIVA Y DE MANEJO DEL DOLOR", "07032107", "07032126", 20, 5, 1, 1], ["DERMATOLOGÍA", "07021300", "09600362", 45, 18, 5, 5], ["INFECTOLOGÍA", "07032108", "07032127", 20, 5, 1, 1], ["INMUNOLOGÍA", "07022001", "09600365", 25, 5, 2, 1], ["GERIATRÍA", "07021531", "09600366", 40, 18, 4, 5], ["MEDICINA FÍSICA Y REHABILITACIÓN", "07032109", "07032128", 33, 14, 3, 4], ["MEDICINA REPRODUCTIVA E INFERTILIDAD", "07032110", "07032129", 20, 10, 1, 3], ["NEUROLOGÍA PEDIÁTRICA", "07022134", "09600369", 33, 10, 3, 3], ["NEUROLOGÍA ADULTO", "07021700", "09600370", 33, 14, 3, 4], ["ONCOLOGÍA MÉDICA", "07021800", "09600371", 25, 10, 2, 3], ["PSIQUIATRÍA PEDIÁTRICA Y DE LA ADOLESCENCIA", "07021801", "09600372", 20, 10, 1, 3], ["PSIQUIATRÍA ADULTO", "07021900", "09600373", 20, 10, 1, 3], ["CIRUGÍA PEDIÁTRICA", "07022130", "09600374", 40, 25, 4, 6], ["CIRUGÍA GENERAL", "07032111", "07032130", 45, 18, 5, 5], ["CIRUGÍA DIGESTIVA (ALTA)", "07022143", "09600376", 45, 18, 5, 5], ["CIRUGÍA DE CABEZA, CUELLO Y MAXILOFACIAL", "07022144", "09600377", 33, 10, 3, 3], ["CIRUGÍA PLÁSTICA Y REPARADORA", "07032112", "07032131", 33, 14, 3, 4], ["MEDICINA DEL DEPORTE", "07032113", "07032132", 20, 14, 1, 4], ["COLOPROCTOLOGÍA (CIRUGÍA DIGESTIVA BAJA)", "07022137", "09600380", 45, 14, 5, 4], ["CIRUGÍA TÓRAX", "07022700", "09600381", 40, 18, 4, 5], ["CIRUGÍA VASCULAR PERIFÉRICA", "07022800", "09600382", 45, 14, 5, 4], ["NEUROCIRUGÍA", "07022900", "09600383", 40, 14, 4, 4], ["CIRUGÍA CARDIOVASCULAR", "07021701", "09600384", 40, 25, 4, 6], ["ANESTESIOLOGÍA", "07023100", "09600385", 75, 70, 6, 7], ["OBSTETRICIA Y GINECOLOGÍA", "07032114", "07032133", 40, 14, 4, 4], ["GINECOLOGÍA ONCOLÓGICA", "07032115", "07032134", 20, 5, 1, 1], ["NEURORRADIOLOGIA", "07032116", "07032135", 20, 10, 1, 3], ["OFTALMOLOGÍA", "07023203", "09600389", 45, 18, 5, 5], ["OTORRINOLARINGOLOGÍA", "07023700", "09600390", 45, 18, 5, 5], ["TRAUMATOLOGÍA Y ORTOPEDIA", "07032117", "07032136", 40, 14, 4, 4], ["UROLOGÍA", "07032118", "07032137", 40, 10, 4, 3], ["MEDICINA FAMILIAR", "07024200", "09600396", 33, 14, 3, 4], ["DIABETOLOGÍA", "07024201", "09600398", 25, 7, 2, 2], ["RADIOTERAPIA ONCOLÓGICA", "07030502", "09600401", 25, 14, 2, 4]];
+const PESO = 3.2;                      // ponderación de cada indicador en el BSC (%)
+const SENS_CNE = [60,50,40,35], SENS_ALT = [60,50,40,35], SENS_NSP = [75,70,65,60];
+const REQ_CNE = 70, REQ_PERT = 90, REQ_CR = 80;          // % de especialidades que deben cumplir el requisito
+const STD_PERT = 90, STD_CR = 90, STD_NSPN = 12, STD_NSPC = 10;
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const SIGLAS = {"106100":"HCVB","106102":"HEP","106103":"HCV","106104":"H. Salvador","200341":"COSAM D. Asún","201260":"COSAM Litoral"};
+const DATA_URLS = ["datos/rem_a07.xlsx","datos/rem_a07.xlsm","datos/rem_a07.csv"];
+const REQ_URL = "datos/requisito_le.csv";      // ano;IdEstablecimiento;periodo;porcentaje (publicado)
+// Modo consulta: ver.html (o ?ver) muestra los datos publicados, sin carga ni edición.
+const VISOR = /ver\.html$/i.test(location.pathname) || new URLSearchParams(location.search).has("ver");
+let REQPUB = {};                               // requisitos LE publicados en el servidor
+
+const byA = {}, byA1 = {};
+SPEC.forEach((s,i)=>{ byA[s[1]] = i; byA1[s[2]] = i; });
+
+/* ===== Estado ===== */
+let RAW = new Map();   // clave ano|est|mes|codigo -> valores de la fila (la última carga reemplaza)
+let EST = {};          // id -> {nombre, nivel}
+let FUENTES = [];
+let VIEW = "red";
+
+/* ===== Utilidades ===== */
+const tr = v => Math.floor(Math.round(v*1e6)/1e6*10)/10;            // 1 decimal truncado
+const fx = (v,d=1) => v==null||isNaN(v) ? "–" : v.toFixed(d).replace(".",",");
+const n0 = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+const sens = (v,t) => v==null ? null : v>=t[0]?4 : v>=t[1]?3 : v>=t[2]?2 : v>=t[3]?1 : 0;
+const ptsB = p => p==null ? "" : `<span class="pts p${p}">${p}</span>`;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sigla = id => SIGLAS[id] || (EST[id] ? EST[id].nombre : id);
+const $ = id => document.getElementById(id);
+function store(k,v){ try{ if(v==null||v==="") localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){} }
+function load(k){ try{ return localStorage.getItem(k);}catch(e){ return null; } }
+
+/* ===== Lectura del REM ===== */
+function normCod(v){
+  let s = String(v==null?"":v).trim();
+  if(/^\d+$/.test(s) && s.length<8) s = s.padStart(8,"0");
+  return s;
+}
+function findSheet(wb){
+  for(const n of wb.SheetNames){
+    const ws = wb.Sheets[n]; if(!ws || !ws["!ref"]) continue;
+    const r = XLSX.utils.decode_range(ws["!ref"]); r.e.r = Math.min(r.e.r, r.s.r);
+    const hdr = (XLSX.utils.sheet_to_json(ws,{header:1,range:r})[0]||[]).map(h=>String(h).trim());
+    if(hdr.includes("CodigoPrestacion") && hdr.includes("Col01") && hdr.includes("IdEstablecimiento")) return ws;
+  }
+  return null;
+}
+function ingest(wb, nombre){
+  const ws = findSheet(wb);
+  if(!ws) throw new Error(`"${nombre}" no tiene una hoja con columnas Mes, IdEstablecimiento, CodigoPrestacion y Col01… (hoja BD del REM).`);
+  const rows = XLSX.utils.sheet_to_json(ws,{defval:0, raw:true});
+  let n = 0;
+  for(const r of rows){
+    const cod = normCod(r.CodigoPrestacion);
+    if(byA[cod]==null && byA1[cod]==null) continue;
+    const mes = parseInt(r.Mes,10); if(!(mes>=1 && mes<=12)) continue;
+    const ano = parseInt(r.Ano,10) || 0;
+    const est = String(r.IdEstablecimiento).trim();
+    const v = {}; for(let k=1;k<=40;k++){ const c="Col"+String(k).padStart(2,"0"); v[k]=n0(r[c]); }
+    RAW.set(`${ano}|${est}|${mes}|${cod}`, v);
+    if(!EST[est]) EST[est] = {nombre: String(r["Nombre Est"]||r.NombreEstablecimiento||est).trim(), nivel: String(r.Nivel||"").trim()};
+    n++;
+  }
+  FUENTES.push(`${nombre} (${n} filas A07)`);
+}
+async function readFile(f){
+  const buf = await f.arrayBuffer();
+  ingest(XLSX.read(buf,{type:"array"}), f.name);
+}
+
+/* ===== Agregación y cálculo ===== */
+function anos(){ return [...new Set([...RAW.keys()].map(k=>+k.split("|")[0]))].sort((a,b)=>a-b); }
+function mesesDe(ano){ return [...new Set([...RAW.keys()].filter(k=>+k.split("|")[0]===ano).map(k=>+k.split("|")[2]))].sort((a,b)=>a-b); }
+function agregar(ano, est, meses){
+  const ms = new Set(meses), acc = {};
+  for(const [k,v] of RAW){
+    const [a,e,m,cod] = k.split("|");
+    if(+a!==ano || e!==est || !ms.has(+m)) continue;
+    let i = byA[cod], isA = true;
+    if(i==null){ i = byA1[cod]; isA = false; }
+    const o = acc[i] || (acc[i] = {i, TOT:0, CN:0, SIC:0, PERT:0, ALTAS:0, CR:0, NSPN:0, NSPC:0});
+    if(isA){ o.TOT += v[1]; o.CN += v[23]+v[27]; o.SIC += v[25]+v[29]; }
+    else { o.PERT += v[11]; o.CR += v[16]+v[17]; o.ALTAS += v[18]+v[19]; o.NSPN += v[20]; o.NSPC += v[21]; }
+  }
+  return Object.values(acc);
+}
+// Resultado por especialidad. null = la especialidad no se considera en ese cálculo.
+function evalEsp(agg){
+  const out = [];
+  for(const r of agg){
+    if(r.TOT<=0) continue;                                  // solo especialidades con producción
+    const s = SPEC[r.i], CTRL = r.TOT - r.CN, o = {...r, CTRL, name:s[0], mCNE:s[3], mALT:s[4], gCNE:s[5], gALT:s[6]};
+    o.pCNE = tr(r.CN/r.TOT*100);           o.cCNE = o.pCNE >= s[3];
+    o.pALT = tr(r.ALTAS/r.TOT*100);        o.cALT = o.pALT >= s[4];
+    o.pPE  = r.SIC>0   ? tr(r.PERT/r.SIC*100) : null;              o.cPE = o.pPE==null ? null : o.pPE >= STD_PERT;
+    o.pN   = r.CN>0    ? tr(r.NSPN/(r.NSPN+r.CN)*100) : null;      o.cN  = o.pN==null  ? null : o.pN  <= STD_NSPN;
+    o.pC   = CTRL>0    ? tr(r.NSPC/(r.NSPC+CTRL)*100) : null;      o.cC  = o.pC==null  ? null : o.pC  <= STD_NSPC;
+    o.pT   = tr((r.NSPN+r.NSPC)/(r.NSPN+r.NSPC+r.TOT)*100);
+    o.pCR  = r.ALTAS>0 ? tr(r.CR/r.ALTAS*100) : null;              o.cCR = o.pCR==null ? null : o.pCR >= STD_CR;
+    out.push(o);
+  }
+  return out.sort((a,b)=>a.name.localeCompare(b.name,"es"));
+}
+function cuenta(esp,k){ const ev = esp.filter(o=>o[k]!==null); return {c: ev.filter(o=>o[k]).length, n: ev.length}; }
+function resumen(esp, reqLE){
+  const N = esp.length; if(!N) return null;
+  const R = {N};
+  // C.4_3.1
+  const cne = cuenta(esp,"cCNE"); R.cne = {...cne, pct: tr(cne.c/cne.n*100)}; R.cne.pts = sens(R.cne.pct,SENS_CNE);
+  R.cne.req = reqLE==null||reqLE==="" ? null : Number(reqLE);
+  R.cne.reqPts = R.cne.req==null ? null : (R.cne.req>=REQ_CNE ? 4 : 0);
+  R.cne.fin = R.cne.pts*0.75 + (R.cne.reqPts||0)*0.25;
+  // C.4_3.5
+  const alt = cuenta(esp,"cALT"); R.alt = {...alt, pct: tr(alt.c/alt.n*100)}; R.alt.pts = sens(R.alt.pct,SENS_ALT);
+  const pe = cuenta(esp,"cPE"); R.alt.req = pe.n ? tr(pe.c/pe.n*100) : null; R.alt.reqC = pe;
+  R.alt.reqPts = R.alt.req==null ? null : (R.alt.req>=REQ_PERT ? 4 : 0);
+  R.alt.fin = R.alt.pts*0.75 + (R.alt.reqPts||0)*0.25;
+  // C.4_3.6
+  const nn = cuenta(esp,"cN"), nc = cuenta(esp,"cC");
+  R.nsp = {nn, nc, pN: nn.n ? tr(nn.c/nn.n*100) : null, pC: nc.n ? tr(nc.c/nc.n*100) : null};
+  R.nsp.pct = tr(((nc.n ? nc.c/nc.n : 0)*0.7 + (nn.n ? nn.c/nn.n : 0)*0.3)*100);
+  R.nsp.pts = sens(R.nsp.pct,SENS_NSP);
+  const cr = cuenta(esp,"cCR"); R.nsp.req = cr.n ? tr(cr.c/cr.n*100) : null; R.nsp.reqC = cr;
+  R.nsp.reqPts = R.nsp.req==null ? null : (R.nsp.req>=REQ_CR ? 4 : 0);
+  R.nsp.fin = R.nsp.pts*0.75 + (R.nsp.reqPts||0)*0.25;
+  R.aporte = (R.cne.fin + R.alt.fin + R.nsp.fin)/4*PESO;
+  return R;
+}
+
+/* ===== Período seleccionado ===== */
+function periodo(){
+  const ano = +$("selAno").value, tipo = $("selTipo").value, mes = +$("selMes").value;
+  const disp = mesesDe(ano);
+  let meses, lab;
+  if(tipo==="mes"){ meses=[mes]; lab=`${MESES[mes-1]} ${ano}`; }
+  else if(tipo==="acum"){ meses=disp.filter(m=>m<=mes); lab=`Acumulado ene–${MESES[mes-1].toLowerCase()} ${ano}`; }
+  else if(tipo==="s1"){ meses=disp.filter(m=>m<=6); lab=`1er semestre ${ano}`+(meses.length<6?` (meses cargados: ${meses.length})`:""); }
+  else if(tipo==="s2"){ meses=disp.filter(m=>m>=7); lab=`2do semestre ${ano}`+(meses.length<6?` (meses cargados: ${meses.length})`:""); }
+  else { meses=disp; lab=`Anual ${ano}`+(meses.length<12?` (meses cargados: ${meses.length})`:""); }
+  const key = tipo==="mes"||tipo==="acum" ? `${tipo}${mes}` : tipo;
+  return {ano, meses, lab, key};
+}
+const reqKey = (ano,est,key) => `bscesp|reqLE|${ano}|${est}|${key}`;
+// Requisito LE: en modo carga manda lo ingresado en este navegador; si no hay, lo publicado.
+function getReq(ano,est,key){ const pub = REQPUB[`${ano}|${est}|${key}`]; if(VISOR) return pub ?? null; const v = load(reqKey(ano,est,key)); return v ?? pub ?? null; }
+function reqCell(id,val,ph){ return VISOR ? (val==null||val===""?"s/d":fx(Number(val))+" %") : `<input class="req" type="number" min="0" max="100" step="0.1" value="${val??""}" onchange="setReq('${id}',this.value)" placeholder="${ph}">`; }
+function estsCon(ano){
+  const ids = new Set();
+  for(const [k,v] of RAW){ const p=k.split("|"); if(+p[0]===ano && byA[p[3]]!=null && v[1]>0) ids.add(p[1]); }
+  return [...ids];
+}
+
+/* ===== Render ===== */
+function render(){
+  const m = $("main");
+  if(!RAW.size && VISOR){ m.innerHTML = `<div class="empty"><div class="big">Aún no hay datos publicados.</div>La información se actualiza cuando se publica el REM A07 del mes.</div>`; return; }
+  if(!RAW.size){ m.innerHTML = `<div class="empty"><div class="big">Cargue el REM A07 para comenzar.</div>Use “Cargar REM A07” o arrastre el archivo aquí. Sirve el .xlsm del REM con su hoja BD (todos los establecimientos), o cualquier base REM con columnas Mes, IdEstablecimiento, CodigoPrestacion y Col01…Col50.<br><br>Los datos se procesan en este navegador; no se envían a ningún servidor.</div>`; return; }
+  if(VIEW==="red") renderRed(m);
+  else if(VIEW==="est") renderEst(m);
+  else if(VIEW==="esp") renderEsp(m);
+  else renderMet(m);
+}
+function cls(ok){ return ok==null ? "na" : ok ? "ok" : "ko"; }
+function tools(id,nombre){ return `<div class="tools"><button class="btn sm" onclick="copiar('${id}')">Copiar tabla</button><button class="btn sm" onclick="excel('${id}','${nombre}')">Descargar Excel</button></div>`; }
+
+function renderRed(m){
+  const P = periodo();
+  const filas = estsCon(P.ano).map(id=>{
+    const esp = evalEsp(agregar(P.ano,id,P.meses));
+    const req = getReq(P.ano,id,P.key);
+    return {id, esp, R: resumen(esp, req), req};
+  }).filter(f=>f.R).sort((a,b)=>b.esp.reduce((s,o)=>s+o.TOT,0)-a.esp.reduce((s,o)=>s+o.TOT,0));
+  let h = `<div class="card"><h2>Resultados de la red · ${esc(P.lab)}</h2>
+  <p class="note">Puntaje de cada indicador = puntos del indicador × 0,75 + puntos del requisito × 0,25 (después de la tabla de sensibilidad). El requisito de C.4_3.1 (% de especialidades que cumplen 60 % de CNE destinada a LE no GES, causales 1 y 17) proviene de SIGTE: ${VISOR?"se informa en la columna “Req. LE %”.":"ingréselo en la columna “Req. LE %” y publíquelo con “Exportar requisitos LE”."} Haga clic en un establecimiento para ver el detalle.</p>
+  ${tools("tRed","BSC_red")}<div class="tw"><table id="tRed"><thead>
+  <tr><th class="l" rowspan="2">Establecimiento</th><th rowspan="2">Esp. con producción</th>
+  <th class="grp" colspan="5">C.4_3.1 Consulta nueva</th><th class="grp" colspan="3">C.4_3.5 Altas</th><th class="grp" colspan="5">C.4_3.6 NSP</th><th class="grp" rowspan="2">Aporte BSC<br>(máx. 9,6 %)</th></tr>
+  <tr><th class="sep">Cumplen · %</th><th>Req. LE %</th><th>Req.</th><th>Puntaje</th><th>Art. 16a</th>
+  <th class="sep">Cumplen · %</th><th>Req. pertinencia</th><th>Puntaje</th>
+  <th class="sep">Nuevas: cumplen · %</th><th>Controles: cumplen · %</th><th>Indicador</th><th>Req. contrarref.</th><th>Puntaje</th></tr></thead><tbody>`;
+  for(const f of filas){
+    const R = f.R;
+    h += `<tr><td class="l"><a class="lnk" onclick="irEst('${f.id}')">${esc(EST[f.id]?.nombre||f.id)}</a></td><td>${R.N}</td>
+    <td class="sep">${R.cne.c}/${R.cne.n} · ${fx(R.cne.pct)} %${ptsB(R.cne.pts)}</td>
+    <td>${reqCell(f.id,f.req,"s/d")}</td>
+    <td class="${R.cne.reqPts==null?"warn":cls(R.cne.reqPts===4)}">${R.cne.reqPts==null?"s/d":R.cne.reqPts===4?"Cumple":"No cumple"}</td>
+    <td><b>${fx(R.cne.fin,2)}</b>${R.cne.reqPts==null?"*":""}</td>
+    <td class="${cls(R.cne.pts===4)}">${R.cne.pts===4?"Cumple":"No cumple"}</td>
+    <td class="sep">${R.alt.c}/${R.alt.n} · ${fx(R.alt.pct)} %${ptsB(R.alt.pts)}</td>
+    <td class="${cls(R.alt.reqPts==null?null:R.alt.reqPts===4)}">${R.alt.reqC.c}/${R.alt.reqC.n} · ${fx(R.alt.req)} %</td>
+    <td><b>${fx(R.alt.fin,2)}</b></td>
+    <td class="sep">${R.nsp.nn.c}/${R.nsp.nn.n} · ${fx(R.nsp.pN)} %</td>
+    <td>${R.nsp.nc.c}/${R.nsp.nc.n} · ${fx(R.nsp.pC)} %</td>
+    <td>${fx(R.nsp.pct)} %${ptsB(R.nsp.pts)}</td>
+    <td class="${cls(R.nsp.reqPts==null?null:R.nsp.reqPts===4)}">${R.nsp.reqC.c}/${R.nsp.reqC.n} · ${fx(R.nsp.req)} %</td>
+    <td><b>${fx(R.nsp.fin,2)}</b></td>
+    <td><b>${fx(R.aporte,2)} %</b></td></tr>`;
+  }
+  h += `</tbody></table></div><div class="leg">* Requisito LE sin dato: el puntaje incluye solo el 75 % del indicador principal. Art. 16a D.S. N°38: C.4_3.1 debe alcanzar 4 puntos (≥ 60 % de especialidades).</div></div>`;
+  m.innerHTML = h;
+}
+
+function renderEst(m){
+  const P = periodo(), id = $("selEst").value;
+  if(!id){ m.innerHTML = `<div class="empty">Seleccione un establecimiento.</div>`; return; }
+  const esp = evalEsp(agregar(P.ano,id,P.meses));
+  const req = getReq(P.ano,id,P.key);
+  const R = resumen(esp, req);
+  if(!R){ m.innerHTML = `<div class="empty">Sin producción de especialidades en el período.</div>`; return; }
+  let h = `<div class="kpis">
+   <div class="kpi"><div class="t">C.4_3.1 Consulta nueva</div><div class="v">${fx(R.cne.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
+     <div class="d">Indicador: ${R.cne.c}/${R.cne.n} especialidades · ${fx(R.cne.pct)} %${ptsB(R.cne.pts)}<br>Requisito LE: ${R.cne.req==null?"<span class='badge b-na'>sin dato</span>":fx(R.cne.req)+" % "+(R.cne.reqPts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>")}
+     ${VISOR?"":reqCell(id,req,"%")}<br>Art. 16a: ${R.cne.pts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
+   <div class="kpi"><div class="t">C.4_3.5 Altas</div><div class="v">${fx(R.alt.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
+     <div class="d">Indicador: ${R.alt.c}/${R.alt.n} especialidades · ${fx(R.alt.pct)} %${ptsB(R.alt.pts)}<br>Requisito pertinencia (≥ 90 % de esp.): ${R.alt.reqC.c}/${R.alt.reqC.n} · ${fx(R.alt.req)} % ${R.alt.reqPts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
+   <div class="kpi"><div class="t">C.4_3.6 Inasistencia (NSP)</div><div class="v">${fx(R.nsp.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
+     <div class="d">Consulta nueva (≤ 12 %): ${R.nsp.nn.c}/${R.nsp.nn.n} · ${fx(R.nsp.pN)} %<br>Control (≤ 10 %): ${R.nsp.nc.c}/${R.nsp.nc.n} · ${fx(R.nsp.pC)} %<br>Indicador (0,7 control + 0,3 nueva): ${fx(R.nsp.pct)} %${ptsB(R.nsp.pts)}<br>Requisito contrarref. (≥ 80 % de esp.): ${R.nsp.reqC.c}/${R.nsp.reqC.n} · ${fx(R.nsp.req)} % ${R.nsp.reqPts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
+  </div>`;
+  h += `<div class="card"><h2>${esc(EST[id]?.nombre||id)} · detalle por especialidad · ${esc(P.lab)}</h2>
+  <p class="note">Rojo: no cumple el estándar de la especialidad. “–”: la especialidad no se considera en ese cálculo (sin CN, sin controles, sin altas o sin SIC de atención secundaria/terciaria en el período). Aporte BSC del establecimiento en estos tres indicadores: <b>${fx(R.aporte,2)} %</b> de 9,6 %.</p>
+  ${tools("tEsp","BSC_"+(SIGLAS[id]||id))}<div class="tw"><table id="tEsp"><thead>
+  <tr><th class="l" rowspan="2">Especialidad</th><th rowspan="2">Total consultas</th><th class="grp" colspan="4">Consulta nueva</th><th class="grp" colspan="3">Altas</th><th class="grp" colspan="3">Pertinencia en box</th><th class="grp" colspan="5">NSP</th><th class="grp" colspan="2">Contrarref. al alta</th></tr>
+  <tr><th class="sep">CN</th><th>Controles</th><th>% CNE</th><th>Meta</th>
+  <th class="sep">Altas</th><th>% Altas</th><th>Meta</th>
+  <th class="sep">CN SIC sec./terc.</th><th>Pertinentes</th><th>%</th>
+  <th class="sep">NSP nuevas</th><th>% nuevas</th><th>NSP controles</th><th>% controles</th><th>% total</th>
+  <th class="sep">N°</th><th>%</th></tr></thead><tbody>`;
+  for(const o of esp){
+    h += `<tr><td class="l">${esc(o.name)}</td><td>${o.TOT}</td>
+    <td class="sep">${o.CN}</td><td>${o.CTRL}</td><td class="${cls(o.cCNE)}">${fx(o.pCNE)}</td><td>${o.mCNE}</td>
+    <td class="sep">${o.ALTAS}</td><td class="${cls(o.cALT)}">${fx(o.pALT)}</td><td>${o.mALT}</td>
+    <td class="sep">${o.SIC}</td><td>${o.PERT}</td><td class="${cls(o.cPE)}">${fx(o.pPE)}</td>
+    <td class="sep">${o.NSPN}</td><td class="${cls(o.cN)}">${fx(o.pN)}</td><td>${o.NSPC}</td><td class="${cls(o.cC)}">${fx(o.pC)}</td><td>${fx(o.pT)}</td>
+    <td class="sep">${o.CR}</td><td class="${cls(o.cCR)}">${fx(o.pCR)}</td></tr>`;
+  }
+  h += `</tbody></table></div></div>`;
+  // Evolución mensual
+  const ms = mesesDe(P.ano);
+  h += `<div class="card"><h2>Evolución mensual ${P.ano}</h2><p class="note">Cada mes se evalúa con las especialidades que tuvieron producción ese mes.</p>
+  ${tools("tMes","BSC_mensual_"+(SIGLAS[id]||id))}<div class="tw"><table id="tMes"><thead>
+  <tr><th class="l" rowspan="2">Mes</th><th rowspan="2">Esp.</th><th class="grp" colspan="2">C.4_3.1 CNE</th><th class="grp" colspan="3">C.4_3.5 Altas</th><th class="grp" colspan="5">C.4_3.6 NSP</th></tr>
+  <tr><th class="sep">Cumplen · %</th><th>Puntaje*</th><th class="sep">Cumplen · %</th><th>Req. pertinencia</th><th>Puntaje</th>
+  <th class="sep">Nuevas</th><th>Controles</th><th>Indicador</th><th>Req. contrarref.</th><th>Puntaje</th></tr></thead><tbody>`;
+  for(const mm of ms){
+    const Rm = resumen(evalEsp(agregar(P.ano,id,[mm])), getReq(P.ano,id,"mes"+mm));
+    if(!Rm) continue;
+    h += `<tr><td class="l">${MESES[mm-1]}</td><td>${Rm.N}</td>
+    <td class="sep">${Rm.cne.c}/${Rm.cne.n} · ${fx(Rm.cne.pct)} %${ptsB(Rm.cne.pts)}</td><td>${fx(Rm.cne.fin,2)}</td>
+    <td class="sep">${Rm.alt.c}/${Rm.alt.n} · ${fx(Rm.alt.pct)} %${ptsB(Rm.alt.pts)}</td><td class="${cls(Rm.alt.reqPts==null?null:Rm.alt.reqPts===4)}">${fx(Rm.alt.req)} %</td><td>${fx(Rm.alt.fin,2)}</td>
+    <td class="sep">${Rm.nsp.nn.c}/${Rm.nsp.nn.n} · ${fx(Rm.nsp.pN)} %</td><td>${Rm.nsp.nc.c}/${Rm.nsp.nc.n} · ${fx(Rm.nsp.pC)} %</td><td>${fx(Rm.nsp.pct)} %${ptsB(Rm.nsp.pts)}</td>
+    <td class="${cls(Rm.nsp.reqPts==null?null:Rm.nsp.reqPts===4)}">${fx(Rm.nsp.req)} %</td><td>${fx(Rm.nsp.fin,2)}</td></tr>`;
+  }
+  h += `</tbody></table></div><div class="leg">* Puntaje C.4_3.1 incluye el requisito LE solo si fue ingresado para ese mes en la vista mensual.</div></div>`;
+  m.innerHTML = h;
+}
+
+function renderEsp(m){
+  const P = periodo(), met = $("selMet").value, ck = {pCNE:"cCNE",pALT:"cALT",pPE:"cPE",pN:"cN",pC:"cC",pT:null,pCR:"cCR"}[met];
+  const ids = estsCon(P.ano);
+  const res = {}; ids.forEach(id=>{ res[id] = {}; evalEsp(agregar(P.ano,id,P.meses)).forEach(o=>res[id][o.i]=o); });
+  const cols = ids.filter(id=>Object.keys(res[id]).length).sort((a,b)=>Object.keys(res[b]).length-Object.keys(res[a]).length);
+  const lab = $("selMet").selectedOptions[0].text;
+  let h = `<div class="card"><h2>${esc(lab)} por especialidad y establecimiento · ${esc(P.lab)}</h2>
+  <p class="note">Verde: cumple el estándar de la especialidad · Rojo: no cumple · “–”: sin producción o no se considera.</p>
+  ${tools("tMat","BSC_especialidades")}<div class="tw"><table id="tMat"><thead><tr><th class="l">Especialidad</th><th>Meta</th>${cols.map(id=>`<th title="${esc(EST[id]?.nombre||id)}">${esc(sigla(id))}</th>`).join("")}<th class="sep">Cumplen</th></tr></thead><tbody>`;
+  SPEC.map((s,i)=>({s,i})).sort((a,b)=>a.s[0].localeCompare(b.s[0],"es")).forEach(({s,i})=>{
+    if(!cols.some(id=>res[id][i])) return;
+    const meta = met==="pCNE"?`≥ ${s[3]}`:met==="pALT"?`≥ ${s[4]}`:met==="pPE"?"≥ 90":met==="pN"?"≤ 12":met==="pC"?"≤ 10":met==="pCR"?"≥ 90":"";
+    let c=0,n=0;
+    const tds = cols.map(id=>{ const o=res[id][i]; if(!o||o[met]==null) return `<td class="na">–</td>`;
+      if(ck){ n++; if(o[ck]) c++; return `<td class="${cls(o[ck])}">${fx(o[met])}</td>`; } return `<td>${fx(o[met])}</td>`; }).join("");
+    h += `<tr><td class="l">${esc(s[0])}</td><td>${meta}</td>${tds}<td class="sep">${ck?`${c}/${n}`:""}</td></tr>`;
+  });
+  h += `</tbody></table></div></div>`;
+  m.innerHTML = h;
+}
+
+function renderMet(m){
+  m.innerHTML = `<div class="card met"><h2>Metodología de cálculo</h2>
+  <p class="note">Instrumento de evaluación EAR 2026, versión 1.1 (noviembre 2026), fichas C.4_3.1, C.4_3.5 y C.4_3.6. Cada indicador pondera ${fx(PESO)} % del BSC. Resultados con 1 decimal truncado.</p>
+  <h3>Reglas generales</h3><ul>
+  <li>Se evalúan solo las especialidades con producción en el período (total de consultas &gt; 0). Se excluyen Medicina Nuclear e Imagenología.</li>
+  <li>Puntaje del indicador = puntos del indicador × 0,75 + puntos del requisito × 0,25. El requisito vale 0 o 4 puntos y se aplica después de la tabla de sensibilidad.</li>
+  <li>El período acumulado suma numeradores y denominadores de los meses y luego evalúa cada especialidad.</li></ul>
+  <h3>Fuente REM A07 (hoja BD)</h3><table><tr><th>Dato</th><th>Origen</th></tr>
+  <tr><td>Total consultas</td><td>Sección A, Col01</td></tr>
+  <tr><td>Consultas nuevas (CN)</td><td>Sección A, Col23 (CN &lt; 18) + Col27 (CN ≥ 18)</td></tr>
+  <tr><td>Controles</td><td>Total − CN</td></tr>
+  <tr><td>CN con SIC de CDT/CAE/CRS/Hospitalizado</td><td>Sección A, Col25 + Col29</td></tr>
+  <tr><td>Pertinentes en box por criterio clínico (CDT/CAE/CRS/Hosp.)</td><td>Sección A.1, Col11</td></tr>
+  <tr><td>Contrarreferencia al alta</td><td>Sección A.1, Col16 + Col17</td></tr>
+  <tr><td>Altas</td><td>Sección A.1, Col18 + Col19</td></tr>
+  <tr><td>NSP consulta nueva / control</td><td>Sección A.1, Col20 / Col21</td></tr></table>
+  <h3>C.4_3.1 Consulta nueva de especialidad</h3><ul>
+  <li>Por especialidad: CN / total consultas ≥ meta de su grupo (20, 25, 33, 40, 45 o 75 %).</li>
+  <li>Indicador: especialidades que cumplen / especialidades con producción. Puntos: ≥ 60 → 4 · ≥ 50 → 3 · ≥ 40 → 2 · ≥ 35 → 1.</li>
+  <li>Requisito (SIGTE): % de especialidades con ≥ 60 % de la CNE destinada a LE no GES (causales 1 y 17); especialidades con menos de 6 meses de LE se consideran cumplidas. Cumple con ≥ 70 %. Se ingresa manualmente.</li>
+  <li>Art. 16a D.S. N°38: este indicador debe alcanzar 4 puntos.</li></ul>
+  <h3>C.4_3.5 Altas de especialidad</h3><ul>
+  <li>Por especialidad: altas / total consultas ≥ meta de su grupo (5, 7, 10, 14, 18, 25 o 70 %).</li>
+  <li>Indicador y puntos: igual que C.4_3.1.</li>
+  <li>Requisito: pertinencia por criterio clínico en box, solo de SIC derivadas desde atención secundaria y terciaria (CDT/CAE/CRS/Hospitalizado): pertinentes / CN de ese origen ≥ 90 %. Se consideran las especialidades con CN de ese origen. Cumple con ≥ 90 % de especialidades.</li></ul>
+  <h3>C.4_3.6 Inasistencia (NSP)</h3><ul>
+  <li>Consulta nueva: NSP / (NSP + CN) ≤ 12 %. Solo especialidades con CN en el período.</li>
+  <li>Control: NSP / (NSP + controles) ≤ 10 %. Solo especialidades con controles en el período.</li>
+  <li>Indicador: 0,7 × (% de especialidades que cumplen en control) + 0,3 × (% que cumplen en nueva). Puntos: ≥ 75 → 4 · ≥ 70 → 3 · ≥ 65 → 2 · ≥ 60 → 1.</li>
+  <li>Requisito: contrarreferencias al alta / altas ≥ 90 %, solo especialidades con altas. Cumple con ≥ 80 % de especialidades.</li>
+  <li>% NSP total por especialidad: (NSP nuevas + NSP controles) / (NSP + total consultas). Es informativo.</li></ul>
+  <h3>Grupos de exigencia por especialidad</h3>
+  <div class="tw" style="max-height:none"><table><thead><tr><th class="l">Especialidad</th><th>Grupo CNE</th><th>Meta CNE</th><th>Grupo altas</th><th>Meta altas</th><th>Cód. Secc. A</th><th>Cód. Secc. A.1</th></tr></thead><tbody>
+  ${[...SPEC].sort((a,b)=>a[0].localeCompare(b[0],"es")).map(s=>`<tr><td class="l">${esc(s[0])}</td><td>${s[5]}</td><td>${s[3]} %</td><td>${s[6]}</td><td>${s[4]} %</td><td>${s[1]}</td><td>${s[2]}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
+}
+
+/* ===== Acciones ===== */
+function setReq(id,v){ const P=periodo(); store(reqKey(P.ano,id,P.key), v===""?null:v); render(); }
+function irEst(id){ $("selEst").value=id; setView("est"); }
+function setView(v){ VIEW=v; document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v)); render(); }
+function tablaTSV(id){
+  return [...$(id).rows].map(r=>[...r.cells].map(c=>{ const i=c.querySelector("input"); let t=i?i.value:c.innerText; return t.replace(/\s+/g," ").trim(); }).join("\t")).join("\n");
+}
+function copiar(id){
+  const t = tablaTSV(id);
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>flash("Tabla copiada: péguela en Excel.")).catch(()=>{
+    const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); flash("Tabla copiada: péguela en Excel.");}catch(e){} ta.remove(); });
+}
+function excel(id,nombre){
+  const aoa = tablaTSV(id).split("\n").map(r=>r.split("\t").map(v=>{ const s=v.replace(/\s*%$/,""); return /^-?\d+(,\d+)?$/.test(s) ? Number(s.replace(",",".")) : v; }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "BSC");
+  XLSX.writeFile(wb, `${nombre}_${periodo().lab.replace(/[^\wáéíóúñ–-]+/gi,"_")}.xlsx`);
+}
+let flashT; function flash(t){ const s=$("status"); const old=s.dataset.base||s.textContent; s.dataset.base=old; s.textContent=t; clearTimeout(flashT); flashT=setTimeout(()=>s.textContent=s.dataset.base,2500); }
+
+function refreshSelectors(){
+  const as = anos(), sa=$("selAno"), prevA=+sa.value;
+  sa.innerHTML = as.map(a=>`<option>${a}</option>`).join(""); sa.value = as.includes(prevA)?prevA:as[as.length-1];
+  const ms = mesesDe(+sa.value), sm=$("selMes"), prevM=+sm.value;
+  sm.innerHTML = ms.map(mm=>`<option value="${mm}">${MESES[mm-1]}</option>`).join(""); sm.value = ms.includes(prevM)?prevM:ms[ms.length-1];
+  const se=$("selEst"), prevE=se.value, ids=estsCon(+sa.value).sort((a,b)=>(EST[a]?.nombre||a).localeCompare(EST[b]?.nombre||b,"es"));
+  se.innerHTML = ids.map(id=>`<option value="${id}">${esc(EST[id]?.nombre||id)}</option>`).join(""); se.value = ids.includes(prevE)?prevE:(ids.includes("106100")?"106100":ids[0]||"");
+  $("lblMes").style.display = ["mes","acum"].includes($("selTipo").value) ? "" : "none";
+  const st=$("status");
+  st.textContent = RAW.size ? `Datos: ${FUENTES.join(" · ")} — año ${sa.value}, meses ${ms.map(x=>MESES[x-1]).join(", ")}; ${ids.length} establecimientos con atención de especialidad.` : "Sin datos cargados.";
+  st.dataset.base = st.textContent;
+}
+async function cargarArchivos(files){
+  const st=$("status");
+  for(const f of files){ st.textContent=`Leyendo ${f.name}…`; try{ await readFile(f); }catch(e){ alert(e.message); } }
+  refreshSelectors(); render();
+}
+async function cargarReqPub(){
+  try{
+    const r = await fetch(REQ_URL,{cache:"no-store"}); if(!r.ok) return;
+    for(const line of (await r.text()).split(/\r?\n/).slice(1)){
+      const sep = line.includes(";") ? ";" : line.includes("\t") ? "\t" : ","; const p = line.split(sep).map(x=>x.trim()); if(p.length<4 || p[3]==="") continue;
+      REQPUB[`${p[0]}|${p[1]}|${p[2]}`] = p[3].replace(",",".");
+    }
+  }catch(e){}
+}
+function exportarReq(){
+  const filas = new Map();
+  Object.entries(REQPUB).forEach(([k,v])=>filas.set(k,v));
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("bscesp|reqLE|")) filas.set(k.slice(13), localStorage.getItem(k)); } }catch(e){}
+  if(!filas.size){ alert("No hay requisitos LE ingresados."); return; }
+  const txt = "ano;IdEstablecimiento;periodo;porcentaje\n" + [...filas].sort().map(([k,v])=>k.split("|").join(";")+";"+String(v).replace(".",",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt],{type:"text/csv"})); a.download = "requisito_le.csv"; a.click();
+}
+async function cargarServidor(){
+  await cargarReqPub();
+  for(const u of DATA_URLS){
+    try{
+      const r = await fetch(u,{cache:"no-store"}); if(!r.ok) continue;
+      $("status").textContent = `Leyendo ${u}…`;
+      ingest(XLSX.read(await r.arrayBuffer(),{type:"array"}), u);
+      break;
+    }catch(e){}
+  }
+  refreshSelectors(); render();
+}
+
+$("file").addEventListener("change",e=>{ cargarArchivos([...e.target.files]); e.target.value=""; });
+$("btnExpReq").addEventListener("click",exportarReq);
+if(VISOR){ document.body.classList.add("visor"); document.querySelector(".sub").textContent += " · Modo consulta"; }
+$("btnClear").addEventListener("click",()=>{ RAW=new Map(); EST={}; FUENTES=[]; refreshSelectors(); render(); });
+["selAno","selTipo","selMes","selEst","selMet"].forEach(id=>$(id).addEventListener("change",()=>{ if(id==="selAno"||id==="selTipo") refreshSelectors(); render(); }));
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>setView(t.dataset.v)));
+const drop=$("drop");
+if(!VISOR){
+drop.addEventListener("dragover",e=>{e.preventDefault(); drop.classList.add("over");});
+drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+drop.addEventListener("drop",e=>{e.preventDefault(); drop.classList.remove("over"); cargarArchivos([...e.dataTransfer.files]);});
+}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+render(); cargarServidor();
+</script>
+</body>
+</html>

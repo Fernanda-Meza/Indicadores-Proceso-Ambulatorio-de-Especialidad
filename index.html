@@ -66,6 +66,7 @@ input.req{width:70px;text-align:right;padding:3px 5px}
 .badge{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700}
 .b-ok{background:var(--ok-bg);color:var(--ok)}.b-ko{background:var(--ko-bg);color:var(--ko)}.b-na{background:#eceff0;color:var(--na)}
 #drop.over{outline:3px dashed var(--pri2);outline-offset:-10px}
+.visor .admin{display:none!important}
 @media print{header .btn,.bar,.tabs,.tools{display:none}.tw{max-height:none}}
 </style>
 </head>
@@ -77,8 +78,9 @@ input.req{width:70px;text-align:right;padding:3px 5px}
   </div>
   <div style="display:flex;gap:8px">
     <input type="file" id="file" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden>
-    <button class="btn inv" onclick="document.getElementById('file').click()">Cargar REM A07</button>
-    <button class="btn inv" id="btnClear" title="Quitar los datos cargados en esta sesión">Limpiar</button>
+    <button class="btn inv admin" onclick="document.getElementById('file').click()">Cargar REM A07</button>
+    <button class="btn inv admin" id="btnExpReq" title="Descarga los requisitos LE ingresados, para publicarlos en datos/requisito_le.csv">Exportar requisitos LE</button>
+    <button class="btn inv admin" id="btnClear" title="Quitar los datos cargados en esta sesión">Limpiar</button>
   </div>
 </header>
 <div class="bar" id="bar">
@@ -124,6 +126,10 @@ const STD_PERT = 90, STD_CR = 90, STD_NSPN = 12, STD_NSPC = 10;
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const SIGLAS = {"106100":"HCVB","106102":"HEP","106103":"HCV","106104":"H. Salvador","200341":"COSAM D. Asún","201260":"COSAM Litoral"};
 const DATA_URLS = ["datos/rem_a07.xlsx","datos/rem_a07.xlsm","datos/rem_a07.csv"];
+const REQ_URL = "datos/requisito_le.csv";      // ano;IdEstablecimiento;periodo;porcentaje (publicado)
+// Modo consulta: ver.html (o ?ver) muestra los datos publicados, sin carga ni edición.
+const VISOR = /ver\.html$/i.test(location.pathname) || new URLSearchParams(location.search).has("ver");
+let REQPUB = {};                               // requisitos LE publicados en el servidor
 
 const byA = {}, byA1 = {};
 SPEC.forEach((s,i)=>{ byA[s[1]] = i; byA1[s[2]] = i; });
@@ -257,6 +263,9 @@ function periodo(){
   return {ano, meses, lab, key};
 }
 const reqKey = (ano,est,key) => `bscesp|reqLE|${ano}|${est}|${key}`;
+// Requisito LE: en modo carga manda lo ingresado en este navegador; si no hay, lo publicado.
+function getReq(ano,est,key){ const pub = REQPUB[`${ano}|${est}|${key}`]; if(VISOR) return pub ?? null; const v = load(reqKey(ano,est,key)); return v ?? pub ?? null; }
+function reqCell(id,val,ph){ return VISOR ? (val==null||val===""?"s/d":fx(Number(val))+" %") : `<input class="req" type="number" min="0" max="100" step="0.1" value="${val??""}" onchange="setReq('${id}',this.value)" placeholder="${ph}">`; }
 function estsCon(ano){
   const ids = new Set();
   for(const [k,v] of RAW){ const p=k.split("|"); if(+p[0]===ano && byA[p[3]]!=null && v[1]>0) ids.add(p[1]); }
@@ -266,6 +275,7 @@ function estsCon(ano){
 /* ===== Render ===== */
 function render(){
   const m = $("main");
+  if(!RAW.size && VISOR){ m.innerHTML = `<div class="empty"><div class="big">Aún no hay datos publicados.</div>La información se actualiza cuando se publica el REM A07 del mes.</div>`; return; }
   if(!RAW.size){ m.innerHTML = `<div class="empty"><div class="big">Cargue el REM A07 para comenzar.</div>Use “Cargar REM A07” o arrastre el archivo aquí. Sirve el .xlsm del REM con su hoja BD (todos los establecimientos), o cualquier base REM con columnas Mes, IdEstablecimiento, CodigoPrestacion y Col01…Col50.<br><br>Los datos se procesan en este navegador; no se envían a ningún servidor.</div>`; return; }
   if(VIEW==="red") renderRed(m);
   else if(VIEW==="est") renderEst(m);
@@ -279,11 +289,11 @@ function renderRed(m){
   const P = periodo();
   const filas = estsCon(P.ano).map(id=>{
     const esp = evalEsp(agregar(P.ano,id,P.meses));
-    const req = load(reqKey(P.ano,id,P.key));
+    const req = getReq(P.ano,id,P.key);
     return {id, esp, R: resumen(esp, req), req};
   }).filter(f=>f.R).sort((a,b)=>b.esp.reduce((s,o)=>s+o.TOT,0)-a.esp.reduce((s,o)=>s+o.TOT,0));
   let h = `<div class="card"><h2>Resultados de la red · ${esc(P.lab)}</h2>
-  <p class="note">Puntaje de cada indicador = puntos del indicador × 0,75 + puntos del requisito × 0,25 (después de la tabla de sensibilidad). El requisito de C.4_3.1 (% de especialidades que cumplen 60 % de CNE destinada a LE no GES, causales 1 y 17) proviene de SIGTE: ingréselo en la columna “Req. LE %”. Haga clic en un establecimiento para ver el detalle.</p>
+  <p class="note">Puntaje de cada indicador = puntos del indicador × 0,75 + puntos del requisito × 0,25 (después de la tabla de sensibilidad). El requisito de C.4_3.1 (% de especialidades que cumplen 60 % de CNE destinada a LE no GES, causales 1 y 17) proviene de SIGTE: ${VISOR?"se informa en la columna “Req. LE %”.":"ingréselo en la columna “Req. LE %” y publíquelo con “Exportar requisitos LE”."} Haga clic en un establecimiento para ver el detalle.</p>
   ${tools("tRed","BSC_red")}<div class="tw"><table id="tRed"><thead>
   <tr><th class="l" rowspan="2">Establecimiento</th><th rowspan="2">Esp. con producción</th>
   <th class="grp" colspan="5">C.4_3.1 Consulta nueva</th><th class="grp" colspan="3">C.4_3.5 Altas</th><th class="grp" colspan="5">C.4_3.6 NSP</th><th class="grp" rowspan="2">Aporte BSC<br>(máx. 9,6 %)</th></tr>
@@ -294,7 +304,7 @@ function renderRed(m){
     const R = f.R;
     h += `<tr><td class="l"><a class="lnk" onclick="irEst('${f.id}')">${esc(EST[f.id]?.nombre||f.id)}</a></td><td>${R.N}</td>
     <td class="sep">${R.cne.c}/${R.cne.n} · ${fx(R.cne.pct)} %${ptsB(R.cne.pts)}</td>
-    <td><input class="req" type="number" min="0" max="100" step="0.1" value="${f.req??""}" onchange="setReq('${f.id}',this.value)" placeholder="s/d"></td>
+    <td>${reqCell(f.id,f.req,"s/d")}</td>
     <td class="${R.cne.reqPts==null?"warn":cls(R.cne.reqPts===4)}">${R.cne.reqPts==null?"s/d":R.cne.reqPts===4?"Cumple":"No cumple"}</td>
     <td><b>${fx(R.cne.fin,2)}</b>${R.cne.reqPts==null?"*":""}</td>
     <td class="${cls(R.cne.pts===4)}">${R.cne.pts===4?"Cumple":"No cumple"}</td>
@@ -316,13 +326,13 @@ function renderEst(m){
   const P = periodo(), id = $("selEst").value;
   if(!id){ m.innerHTML = `<div class="empty">Seleccione un establecimiento.</div>`; return; }
   const esp = evalEsp(agregar(P.ano,id,P.meses));
-  const req = load(reqKey(P.ano,id,P.key));
+  const req = getReq(P.ano,id,P.key);
   const R = resumen(esp, req);
   if(!R){ m.innerHTML = `<div class="empty">Sin producción de especialidades en el período.</div>`; return; }
   let h = `<div class="kpis">
    <div class="kpi"><div class="t">C.4_3.1 Consulta nueva</div><div class="v">${fx(R.cne.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
      <div class="d">Indicador: ${R.cne.c}/${R.cne.n} especialidades · ${fx(R.cne.pct)} %${ptsB(R.cne.pts)}<br>Requisito LE: ${R.cne.req==null?"<span class='badge b-na'>sin dato</span>":fx(R.cne.req)+" % "+(R.cne.reqPts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>")}
-     <input class="req" type="number" min="0" max="100" step="0.1" value="${req??""}" onchange="setReq('${id}',this.value)" placeholder="%"><br>Art. 16a: ${R.cne.pts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
+     ${VISOR?"":reqCell(id,req,"%")}<br>Art. 16a: ${R.cne.pts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
    <div class="kpi"><div class="t">C.4_3.5 Altas</div><div class="v">${fx(R.alt.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
      <div class="d">Indicador: ${R.alt.c}/${R.alt.n} especialidades · ${fx(R.alt.pct)} %${ptsB(R.alt.pts)}<br>Requisito pertinencia (≥ 90 % de esp.): ${R.alt.reqC.c}/${R.alt.reqC.n} · ${fx(R.alt.req)} % ${R.alt.reqPts===4?"<span class='badge b-ok'>cumple</span>":"<span class='badge b-ko'>no cumple</span>"}</div></div>
    <div class="kpi"><div class="t">C.4_3.6 Inasistencia (NSP)</div><div class="v">${fx(R.nsp.fin,2)} <span style="font-size:14px;color:var(--mut)">/ 4 pts</span></div>
@@ -354,7 +364,7 @@ function renderEst(m){
   <tr><th class="sep">Cumplen · %</th><th>Puntaje*</th><th class="sep">Cumplen · %</th><th>Req. pertinencia</th><th>Puntaje</th>
   <th class="sep">Nuevas</th><th>Controles</th><th>Indicador</th><th>Req. contrarref.</th><th>Puntaje</th></tr></thead><tbody>`;
   for(const mm of ms){
-    const Rm = resumen(evalEsp(agregar(P.ano,id,[mm])), load(reqKey(P.ano,id,"mes"+mm)));
+    const Rm = resumen(evalEsp(agregar(P.ano,id,[mm])), getReq(P.ano,id,"mes"+mm));
     if(!Rm) continue;
     h += `<tr><td class="l">${MESES[mm-1]}</td><td>${Rm.N}</td>
     <td class="sep">${Rm.cne.c}/${Rm.cne.n} · ${fx(Rm.cne.pct)} %${ptsB(Rm.cne.pts)}</td><td>${fx(Rm.cne.fin,2)}</td>
@@ -460,7 +470,25 @@ async function cargarArchivos(files){
   for(const f of files){ st.textContent=`Leyendo ${f.name}…`; try{ await readFile(f); }catch(e){ alert(e.message); } }
   refreshSelectors(); render();
 }
+async function cargarReqPub(){
+  try{
+    const r = await fetch(REQ_URL,{cache:"no-store"}); if(!r.ok) return;
+    for(const line of (await r.text()).split(/\r?\n/).slice(1)){
+      const sep = line.includes(";") ? ";" : line.includes("\t") ? "\t" : ","; const p = line.split(sep).map(x=>x.trim()); if(p.length<4 || p[3]==="") continue;
+      REQPUB[`${p[0]}|${p[1]}|${p[2]}`] = p[3].replace(",",".");
+    }
+  }catch(e){}
+}
+function exportarReq(){
+  const filas = new Map();
+  Object.entries(REQPUB).forEach(([k,v])=>filas.set(k,v));
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("bscesp|reqLE|")) filas.set(k.slice(13), localStorage.getItem(k)); } }catch(e){}
+  if(!filas.size){ alert("No hay requisitos LE ingresados."); return; }
+  const txt = "ano;IdEstablecimiento;periodo;porcentaje\n" + [...filas].sort().map(([k,v])=>k.split("|").join(";")+";"+String(v).replace(".",",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt],{type:"text/csv"})); a.download = "requisito_le.csv"; a.click();
+}
 async function cargarServidor(){
+  await cargarReqPub();
   for(const u of DATA_URLS){
     try{
       const r = await fetch(u,{cache:"no-store"}); if(!r.ok) continue;
@@ -473,13 +501,17 @@ async function cargarServidor(){
 }
 
 $("file").addEventListener("change",e=>{ cargarArchivos([...e.target.files]); e.target.value=""; });
+$("btnExpReq").addEventListener("click",exportarReq);
+if(VISOR){ document.body.classList.add("visor"); document.querySelector(".sub").textContent += " · Modo consulta"; }
 $("btnClear").addEventListener("click",()=>{ RAW=new Map(); EST={}; FUENTES=[]; refreshSelectors(); render(); });
 ["selAno","selTipo","selMes","selEst","selMet"].forEach(id=>$(id).addEventListener("change",()=>{ if(id==="selAno"||id==="selTipo") refreshSelectors(); render(); }));
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>setView(t.dataset.v)));
 const drop=$("drop");
+if(!VISOR){
 drop.addEventListener("dragover",e=>{e.preventDefault(); drop.classList.add("over");});
 drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
 drop.addEventListener("drop",e=>{e.preventDefault(); drop.classList.remove("over"); cargarArchivos([...e.dataTransfer.files]);});
+}
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 render(); cargarServidor();
 </script>
