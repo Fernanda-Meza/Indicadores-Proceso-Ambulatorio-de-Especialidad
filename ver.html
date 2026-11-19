@@ -79,7 +79,7 @@ input.req{width:70px;text-align:right;padding:3px 5px}
   <div style="display:flex;gap:8px">
     <input type="file" id="file" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden>
     <button class="btn inv admin" onclick="document.getElementById('file').click()">Cargar REM A07</button>
-    <button class="btn inv admin" id="btnExpReq" title="Descarga los requisitos LE ingresados, para publicarlos en datos/requisito_le.csv">Exportar requisitos LE</button>
+    <button class="btn admin" id="btnPub" title="Sube los datos cargados y los requisitos LE al repositorio, para que se vean en la página de consulta">Publicar en la red</button>
     <button class="btn inv admin" id="btnClear" title="Quitar los datos cargados en esta sesión">Limpiar</button>
   </div>
 </header>
@@ -111,6 +111,17 @@ input.req{width:70px;text-align:right;padding:3px 5px}
   <div class="tab" data-v="met">Metodología</div>
 </div>
 <div class="status" id="status">Sin datos cargados.</div>
+<div id="pubBox" class="card admin" style="display:none;margin:14px 22px 0">
+  <h2>Publicar en la red</h2>
+  <p class="note">Se suben al repositorio <b id="pubRepo"></b> los datos REM cargados (<code>datos/rem_a07.json</code>) y los requisitos LE ingresados (<code>datos/requisito_le.csv</code>). La página de consulta los mostrará 1 a 2 minutos después. Se necesita un token de GitHub con permiso <i>Contents: Read and write</i> sobre este repositorio; queda guardado solo en este navegador.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input id="pubToken" type="password" placeholder="Token de GitHub (github_pat_…)" style="flex:1;min-width:320px;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px">
+    <button class="btn" id="pubGo">Publicar ahora</button>
+    <button class="btn" id="pubForget" title="Borra el token guardado en este navegador">Olvidar token</button>
+    <button class="btn" id="pubClose">Cerrar</button>
+  </div>
+  <p class="note" id="pubMsg" style="margin-top:8px"></p>
+</div>
 <main id="main"></main>
 
 <script src="xlsx.full.min.js"></script>
@@ -125,7 +136,8 @@ const REQ_CNE = 70, REQ_PERT = 90, REQ_CR = 80;          // % de especialidades 
 const STD_PERT = 90, STD_CR = 90, STD_NSPN = 12, STD_NSPC = 10;
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const SIGLAS = {"106100":"HCVB","106102":"HEP","106103":"HCV","106104":"H. Salvador","200341":"COSAM D. Asún","201260":"COSAM Litoral"};
-const DATA_URLS = ["datos/rem_a07.xlsx","datos/rem_a07.xlsm","datos/rem_a07.csv"];
+const DATA_URLS = ["datos/rem_a07.json","datos/rem_a07.xlsx","datos/rem_a07.xlsm","datos/rem_a07.csv"];
+const PUB_COLS = [1,9,11,16,17,18,19,20,21,23,25,27,29];   // columnas REM usadas en el cálculo
 const REQ_URL = "datos/requisito_le.csv";      // ano;IdEstablecimiento;periodo;porcentaje (publicado)
 // Modo consulta: ver.html (o ?ver) muestra los datos publicados, sin carga ni edición.
 const VISOR = /ver\.html$/i.test(location.pathname) || new URLSearchParams(location.search).has("ver");
@@ -435,7 +447,7 @@ function renderMet(m){
 }
 
 /* ===== Acciones ===== */
-function setReq(id,v){ const P=periodo(); store(reqKey(P.ano,id,P.key), v===""?null:v); render(); }
+function setReq(id,v){ const P=periodo(), k=reqKey(P.ano,id,P.key); if((load(k)??"")===v) return; store(k, v===""?null:v); setTimeout(render,0); }
 function irEst(id){ $("selEst").value=id; setView("est"); }
 function setView(v){ VIEW=v; document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v)); render(); }
 function tablaTSV(id){
@@ -487,13 +499,69 @@ function exportarReq(){
   const txt = "ano;IdEstablecimiento;periodo;porcentaje\n" + [...filas].sort().map(([k,v])=>k.split("|").join(";")+";"+String(v).replace(".",",")).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt],{type:"text/csv"})); a.download = "requisito_le.csv"; a.click();
 }
+/* ===== Publicación en el repositorio (GitHub API) ===== */
+function datosJSON(){
+  const filas = [];
+  for(const [k,v] of RAW){ const [a,e,m,c] = k.split("|"); filas.push([+a,e,+m,c,...PUB_COLS.map(i=>v[i]||0)]); }
+  return JSON.stringify({generado:new Date().toISOString(), fuentes:FUENTES, columnas:PUB_COLS, est:EST, filas});
+}
+function ingestJSON(o, nombre){
+  const cols = o.columnas || PUB_COLS;
+  for(const f of o.filas){ const v={}; cols.forEach((c,j)=>v[c]=n0(f[4+j])); RAW.set(`${f[0]}|${f[1]}|${f[2]}|${f[3]}`, v); }
+  Object.entries(o.est||{}).forEach(([id,e])=>{ if(!EST[id]) EST[id]=e; });
+  const d = o.generado ? new Date(o.generado) : null;
+  FUENTES.push(`${nombre}${d?` (publicado ${d.toLocaleDateString("es-CL")} ${d.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})})`:""}`);
+}
+function reqCSV(){
+  const filas = new Map(Object.entries(REQPUB));
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("bscesp|reqLE|")) filas.set(k.slice(13), localStorage.getItem(k)); } }catch(e){}
+  for(const k of [...filas.keys()]) if(filas.get(k)==null||filas.get(k)==="") filas.delete(k);
+  return "ano;IdEstablecimiento;periodo;porcentaje\n" + [...filas].sort().map(([k,v])=>k.split("|").join(";")+";"+String(v).replace(".",",")).join("\n") + "\n";
+}
+function repoDestino(){
+  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "";
+  const repo = decodeURIComponent(location.pathname.split("/").filter(Boolean)[0]||"");
+  return {owner, repo};
+}
+function b64utf8(str){
+  const bytes = new TextEncoder().encode(str); let bin = "";
+  for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000));
+  return btoa(bin);
+}
+async function subirArchivo(owner, repo, token, ruta, texto){
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${ruta}`;
+  const h = {"Authorization":`Bearer ${token}`, "Accept":"application/vnd.github+json"};
+  let sha;
+  const g = await fetch(url+"?ref=main",{headers:h, cache:"no-store"});
+  if(g.ok) sha = (await g.json()).sha; else if(g.status!==404) throw new Error(`No se pudo leer ${ruta} (error ${g.status}). Revise el token y sus permisos.`);
+  const p = await fetch(url,{method:"PUT", headers:{...h,"Content-Type":"application/json"},
+    body: JSON.stringify({message:`Actualiza ${ruta} desde la app`, content:b64utf8(texto), branch:"main", ...(sha?{sha}:{})})});
+  if(!p.ok){ const e = await p.json().catch(()=>({})); throw new Error(`No se pudo publicar ${ruta} (error ${p.status}${e.message?": "+e.message:""}).`); }
+}
+async function publicar(){
+  const msg = $("pubMsg"), token = $("pubToken").value.trim(), {owner, repo} = repoDestino();
+  if(!RAW.size){ msg.textContent = "Primero cargue el REM A07."; return; }
+  if(!owner || !repo){ msg.textContent = "La publicación solo funciona desde la página publicada en github.io."; return; }
+  if(!token){ msg.textContent = "Ingrese el token de GitHub."; return; }
+  store("bscesp|token", token);
+  try{
+    $("pubGo").disabled = true;
+    msg.textContent = "Publicando datos REM…";
+    await subirArchivo(owner, repo, token, "datos/rem_a07.json", datosJSON());
+    msg.textContent = "Publicando requisitos LE…";
+    await subirArchivo(owner, repo, token, "datos/requisito_le.csv", reqCSV());
+    msg.innerHTML = `<b style="color:var(--ok)">Publicado.</b> La página de consulta mostrará los datos nuevos en 1 a 2 minutos (si no, recargue con Ctrl + Shift + R).`;
+  }catch(e){ msg.innerHTML = `<b style="color:var(--ko)">${esc(e.message)}</b>`; }
+  finally{ $("pubGo").disabled = false; }
+}
 async function cargarServidor(){
   await cargarReqPub();
   for(const u of DATA_URLS){
     try{
       const r = await fetch(u,{cache:"no-store"}); if(!r.ok) continue;
       $("status").textContent = `Leyendo ${u}…`;
-      ingest(XLSX.read(await r.arrayBuffer(),{type:"array"}), u);
+      if(u.endsWith(".json")) ingestJSON(await r.json(), u);
+      else ingest(XLSX.read(await r.arrayBuffer(),{type:"array"}), u);
       break;
     }catch(e){}
   }
@@ -501,7 +569,10 @@ async function cargarServidor(){
 }
 
 $("file").addEventListener("change",e=>{ cargarArchivos([...e.target.files]); e.target.value=""; });
-$("btnExpReq").addEventListener("click",exportarReq);
+$("btnPub").addEventListener("click",()=>{ const b=$("pubBox"); const r=repoDestino(); $("pubRepo").textContent = r.owner&&r.repo ? `${r.owner}/${r.repo}` : "(abra la app desde github.io)"; $("pubToken").value = load("bscesp|token")||""; $("pubMsg").textContent=""; b.style.display = b.style.display==="none" ? "" : "none"; });
+$("pubGo").addEventListener("click",publicar);
+$("pubForget").addEventListener("click",()=>{ store("bscesp|token",null); $("pubToken").value=""; $("pubMsg").textContent="Token borrado de este navegador."; });
+$("pubClose").addEventListener("click",()=>$("pubBox").style.display="none");
 if(VISOR){ document.body.classList.add("visor"); document.querySelector(".sub").textContent += " · Modo consulta"; }
 $("btnClear").addEventListener("click",()=>{ RAW=new Map(); EST={}; FUENTES=[]; refreshSelectors(); render(); });
 ["selAno","selTipo","selMes","selEst","selMet"].forEach(id=>$(id).addEventListener("change",()=>{ if(id==="selAno"||id==="selTipo") refreshSelectors(); render(); }));
